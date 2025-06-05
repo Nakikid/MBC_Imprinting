@@ -1,11 +1,11 @@
-# Preprocessing and analysis of scRNA-seq data, part of the analysis and functions is from https://doi.org/10.1038/s41590-023-01497-y
+# Preprocessing and analysis of scMulti-omics data, some of the code and analytical strategies used in this script were adapted from https://doi.org/10.1038/s41590-023-01497-y
 
-# This script is divided into 6 parts:
-# Part1 is to load R packages and functions, define colors of this paper.
-# Part2 and 3 are preprocessing of 2 batch datasets, including demultiplexing, QC, nonB cell filtering and defining antigen+ B cells 
-# Part4 is dataset integration, WNN analysis and cell type annotation
-# Part5 is to identify differentially expressed genes and pathway analysis
-# Part6 is BCR repertoire analysis
+# This script is divided into six parts:
+# Part 1: Loading R packages and functions, and defining the colors used in this paper.
+# Part 2 and 3: Preprocessing of two batch datasets, including demultiplexing, quality control (QC), non-B cell filtering, and defining antigen+ B cells.
+# Part 4: Dataset integration, WNN analysis, and cell type annotation.
+# Part 5: Identifying differentially expressed genes and performing pathway analysis.
+# Part 6: BCR repertoire analysis
 
 #### 01. Load packages and functions, define colors ####
 library(seqinr)
@@ -54,8 +54,6 @@ Ancestral = "grey95"
 Early = "#D4B81C"
 Late = "#396060"
 
-setwd("C:/Users/cchan/file/work/cls/Lab/03.WYY_scRNA")
-
 #### 02. Batch1 preprocessing ####
 #### 02.1 Batch1: loading data, filtering, Hashing demultiplexing, add metadata information ####
 cell <- Read10X("./cellranger/batch1/sample_filtered_feature_bc_matrix")
@@ -82,13 +80,11 @@ raw <- NormalizeData(raw, assay = "Hashing", normalization.method = "CLR", margi
 raw <- HTODemux(raw, assay = "Hashing", positive.quantile = 0.99)
 RidgePlot(raw, assay = "Hashing", features = rownames(raw[["Hashing"]]), ncol = 4)+center.title()
 table(raw$Hashing_classification.global)
-#Doublet Negative  Singlet 
-#2657        9    13386
 
-# Filtering out cells that are not singlets
+# Filter out cells that are not singlets
 singlet <- subset(raw, Hashing_classification.global == "Singlet")
 
-# QC and selecting cells for further analysis
+# QC
 Ig_gene <- grep("^IG[HKL][VDJ]|^IGH[A][1-2]|^IGH[G][1-4]|^IGHD$|^IGHM$|^IGHE$|^IGKC$|^IGLC[1-7]",rownames(singlet),value = T)
 
 singlet[["percent.mt"]] <- PercentageFeatureSet(singlet, pattern = "^MT-")
@@ -100,7 +96,7 @@ VlnPlot(singlet, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 
 
 quantile(singlet@meta.data$nFeature_RNA,probs = seq(0, 1, 1/100))
 quantile(singlet@meta.data$percent.mt,probs = seq(0, 1, 1/100))
-singlet <- subset(singlet, subset = nFeature_RNA > 200 & percent.mt < 10) #13347 cells
+singlet <- subset(singlet, subset = nFeature_RNA > 200 & percent.mt < 10)
 
 singlet <- RenameCells(singlet, new.names = paste0(colnames(singlet), "_batch1"))
 singlet$cell_id <- rownames(singlet@meta.data)
@@ -109,7 +105,7 @@ rm(raw)
 # Remove Ig genes
 singlet@assays$RNA <- subset(singlet@assays$RNA, features=setdiff(rownames(singlet@assays$RNA), Ig_gene)) 
 
-# Adding Timepoint and Patient IDs as columns
+# Add timepoint and sample information
 singlet$sampleid <- ""
 singlet$sampleid[singlet@meta.data$hash.ID == "Hashtag1"] <- "H002-1"
 singlet$sampleid[singlet@meta.data$hash.ID == "Hashtag2"] <- "H002-2"
@@ -134,11 +130,11 @@ table(singlet$sampleid)
 table(singlet$sampleinfo)
 table(singlet$timepoint)
 
-# We remove the sample SLE_LYL because the infection timepoint is uncetain
+# We remove SLE_LYL because the infection timepoint is uncetain
 singlet <- subset(singlet,sampleid != "SLE_LYL")
 
 #### 02.2 Batch1: Reduce dimension and Cluster ####
-#Seperate B cells and other cells
+# processing step: Normalization, scale, reduce dimension and cluster
 DefaultAssay(singlet) <- "RNA"
 singlet <- NormalizeData(singlet)
 singlet <- FindVariableFeatures(singlet)
@@ -152,10 +148,10 @@ singlet <- FindClusters(singlet, resolution = 0.5)
 marker <- c("ITGAM","CD3D", "CD3E", "CD3G","CD4","CD8A","CD14","NKG7","NCAM1","HBB","CD1C","FCER1A","IL7R","RAG1","RAG2","MME","CD79A","CD79B","MS4A1","CD19","CR2","CD27","CD38","TFRC","CXCR5","ITGAX","FCRL5","SDC1","PRDM1") #Itgam is Cd11b(Myeloid Cells)
 My_DotPlot(singlet,features = c(marker),group_by = "seurat_clusters",dot_scale = 6,coord_flip = FALSE)
 
-#remove c11,14 for doublets and rerun 
+# remove c11,14 for doublets and rerun the processing step above
 singlet <- subset(singlet, seurat_clusters %in% c(11,14),invert = T)
 
-#mainType annotation
+# mainType annotation
 singlet$mainType <- "BC"
 singlet$mainType[singlet$seurat_clusters %in% c(7,12)] <- "Mono_DC"
 singlet$mainType[singlet$seurat_clusters %in% c(9,11)] <- "T_NK"
@@ -163,7 +159,6 @@ singlet$cell_id <- rownames(singlet@meta.data)
 table(singlet$mainType)
 
 # filter nonB cells and subset B cells for downstream analysis
-
 BC <- subset(singlet, mainType == "BC")
 BC <- NormalizeData(BC) %>% FindVariableFeatures() %>% ScaleData() %>% RunPCA()
 ElbowPlot(singlet,50)
@@ -173,7 +168,7 @@ BC <- FindClusters(BC, resolution = 0.5)
 My_DotPlot(BC,features = c(marker),group_by = "seurat_clusters",dot_scale = 6,coord_flip = FALSE)
 
 #### 02.3 Batch1: Processing of baiting counts ####
-# Pre-processing baiting counts
+# Pre-process baiting counts
 Baiting_df <- as.data.frame(t(as.data.frame(BC@assays$Baiting@counts)))
 colnames(Baiting_df) <- c("WH_RBD", "BF7_RBD","WH_NTD","BF7_NTD","S2","HA","Blank")
 
@@ -187,14 +182,13 @@ ggplot(melted_Baiting_df, aes(x = value, y = variable,fill =variable)) +
   theme_ridges(font_size = 13, grid = TRUE) + 
   theme(axis.title.y = element_blank(),axis.title.x = element_blank())
 
-# Correcting by using the negative control
+# Correct by using the negative control
 Baiting_df$cor_WH_RBD <- Baiting_df$WH_RBD - Baiting_df$Blank
 Baiting_df$cor_BF7_RBD <- Baiting_df$BF7_RBD - Baiting_df$Blank
 Baiting_df$cor_WH_NTD <- Baiting_df$WH_NTD - Baiting_df$Blank
 Baiting_df$cor_BF7_NTD <- Baiting_df$BF7_NTD - Baiting_df$Blank
 Baiting_df$cor_S2 <- Baiting_df$S2 - Baiting_df$Blank
 Baiting_df$cor_HA <- Baiting_df$HA - pmax(Baiting_df$WH_RBD,Baiting_df$BF7_RBD,Baiting_df$WH_NTD,Baiting_df$BF7_NTD,Baiting_df$S2)
-
 
 # Density plots after negative control subtraction
 melted_Baiting_df <- Baiting_df[8:13]
@@ -222,7 +216,7 @@ Baiting_df$cor_BF7_NTD.classification <- "Negative"
 Baiting_df$cor_S2.classification <- "Negative"
 Baiting_df$cor_HA.classification <- "Negative"
 
-# These cutoffs are chosen after inspection of the density plots
+# Determine the cut-off values for antigen specificity based on the bimodal distribution
 Baiting_df$cor_WH_RBD.classification[Baiting_df$cor_WH_RBD>=13] <- "Positive"
 Baiting_df$cor_BF7_RBD.classification[Baiting_df$cor_BF7_RBD>=4] <- "Positive"
 Baiting_df$cor_WH_NTD.classification[Baiting_df$cor_WH_NTD>=6] <- "Positive"
@@ -230,7 +224,7 @@ Baiting_df$cor_BF7_NTD.classification[Baiting_df$cor_BF7_NTD>=6] <- "Positive"
 Baiting_df$cor_S2.classification[Baiting_df$cor_S2>=6] <- "Positive"
 Baiting_df$cor_HA.classification[Baiting_df$cor_HA>=30] <- "Positive"
 
-# Adding a column that tells, whether a cell is positive for antigens
+# Adding a column about whether a cell is positive for antigens
 Baiting_df$bait.positive <- "no"
 
 Baiting_df$bait.positive[Baiting_df$cor_S2.classification == "Positive" |
@@ -293,14 +287,14 @@ Baiting_df_final <- merge(Baiting_df,normalized_across_features,by = 0)
 rownames(Baiting_df_final) <- Baiting_df_final$Row.names
 Baiting_df_final$Row.names <- NULL
 
-# These are the final LIBRA scores, adding this to the Seurat object
+# These are the final LIBRA scores, adding these scores to the Seurat object
 BC@meta.data <- merge(BC@meta.data,Baiting_df_final, by=0)
 rownames(BC@meta.data) <- BC$Row.names
 BC$Row.names <- NULL
 remove(normalized_across_features,Baiting_df_final,Baiting_df)
 
 # Classify antigens
-# If one cell is reactive to both S2, WH and BF7, only if the score of S2 is higher than WH and BF7, it is classified as S2 
+# If one cell is reactive to both S2, Ancestral(WH) and BF7, only if the score of S2 is higher than Anncestral(WH) and BF7, it is classified as S2 
 BC$antigen <- "Ag-"
 BC$antigen[BC$cor_WH_RBD.classification == "Positive" & BC$cor_BF7_RBD.classification == "Negative" & BC$cor_S2.classification == "Negative"] <- "Ancestral RBD"
 BC$antigen[BC$cor_WH_RBD.classification == "Negative" & BC$cor_BF7_RBD.classification == "Positive" & BC$cor_S2.classification == "Negative"] <- "BF7 RBD"
@@ -347,7 +341,7 @@ table(BCR$type)
 # double noHeavy noLight  single 
 # 2951    1694     389    20434
 
-# some B cells have more than one heavy or light chain, I choose the dominant one.
+# some B cells have more than one heavy or light chain, I chose the dominant one.
 BCR <- BCR %>%
   mutate(chain = ifelse(locus == 'IGH', 'Heavy', 'Light')) %>%
   group_by(cell_id, chain) %>%
@@ -412,7 +406,7 @@ raw[["Hashing"]] <- Hashing_assay
 
 remove(Baiting_assay,Hashing_assay,Protein_assay,cell)
 
-# Demultiplexing the HTO data
+# Demultiplex the HTO data
 raw <- NormalizeData(raw, assay = "Hashing", normalization.method = "CLR", margin = 2) #normalize across cells
 raw <- HTODemux(raw, assay = "Hashing", positive.quantile = 0.99)
 RidgePlot(raw, assay = "Hashing", features = rownames(raw[["Hashing"]]), ncol = 4)+center.title()
@@ -421,10 +415,10 @@ table(raw$Hashing_classification.global)
 #5900     2876    29449
 table(raw$Hashing_classification.global,raw$Hashing_maxID)
 
-# Filtering out cells that are not singlets
+# Filter out cells that are not singlets
 singlet <- subset(raw, Hashing_classification.global=="Singlet")
 
-# QC and selecting cells for further analysis
+# QC
 Ig_gene <- grep("^IG[HKL][VDJ]|^IGH[A][1-2]|^IGH[G][1-4]|^IGHD$|^IGHM$|^IGHE$|^IGKC$|^IGLC[1-7]",rownames(singlet),value = T)
 
 singlet[["percent.mt"]] <- PercentageFeatureSet(singlet, pattern = "^MT-")
@@ -446,7 +440,7 @@ rm(raw)
 # Remove Ig genes
 singlet@assays$RNA <- subset(singlet@assays$RNA, features=setdiff(rownames(singlet@assays$RNA), Ig_gene)) 
 
-# Adding Timepoint and Patient IDs as columns
+# Add timepoint and sample information
 singlet$sampleid <- ""
 singlet$sampleid[singlet@meta.data$hash.ID == "Hashtag1"] <- "H033-1"
 singlet$sampleid[singlet@meta.data$hash.ID == "Hashtag2"] <- "H033-2"
@@ -467,11 +461,10 @@ singlet$timepoint <- ""
 singlet$timepoint[singlet@meta.data$sampleid %in% c("H033-1","H052-1","R014-1","R017-1")] <- "early"
 singlet$timepoint[singlet@meta.data$sampleid %in% c("H033-2","H052-2","CR-3","R017-2")] <- "late"
 
-
 table(singlet$sampleid)
 
 #### 03.2 Batch2: Reduce dimension and Cluster ####
-#Seperate B cells and other cells
+# processing step: Normalization, scale, reduce dimension and cluster
 DefaultAssay(singlet) <- "RNA"
 singlet <- NormalizeData(singlet)
 singlet <- FindVariableFeatures(singlet)
@@ -487,8 +480,7 @@ DimPlot(singlet, reduction = 'umap', label = T, label.size = 5, pt.size = 0.8,gr
 marker <- c("ITGAM","CD3D", "CD3E", "CD3G","CD4","CD8A","CD14","NKG7","NCAM1","HBB","CD1C","FCER1A","IL7R","RAG1","RAG2","MME","CD79A","CD79B","MS4A1","CD19","CR2","CD27","CD38","TFRC","CXCR5","ITGAX","FCRL5","SDC1","PRDM1") #Itgam is Cd11b(Myeloid Cells)
 My_DotPlot(singlet,features = c(marker),group_by = "seurat_clusters",dot_scale = 6,coord_flip = FALSE)
 
-
-#remove c10,18 for doublets and rerun 
+# remove c10,18 for doublets and rerun the processing step above
 singlet <- subset(singlet, seurat_clusters %in% c(10,18),invert = T)
 
 singlet$mainType <- "BC"
@@ -499,7 +491,6 @@ table(singlet$mainType)
 
 # subset BC
 BC <- subset(singlet, mainType == "BC")
-
 BC <- NormalizeData(BC) %>% FindVariableFeatures() %>% ScaleData() %>% RunPCA()
 ElbowPlot(BC,50)
 BC <- FindNeighbors(BC, dims = 1:30)
@@ -511,7 +502,7 @@ DimPlot(BC, reduction = 'umap', label = T, label.size = 4, pt.size = 0.8,group.b
 My_DotPlot(BC, features = c(marker), group_by = "seurat_clusters",dot_scale = 6,coord_flip = FALSE)
 VlnPlot(BC, features = c("nFeature_RNA","nCount_RNA","percent.mt","percent.Ig"), ncol = 2,pt.size = 0,group.by = "seurat_clusters")
 
-#remove c9 for doublets and rerun
+# remove c9 for doublets and rerun the processing pipline above
 BC <- subset(BC, seurat_clusters != 9) #21309 cells
 
 #### 03.3 Batch2: Processing of baiting counts ####
@@ -566,7 +557,7 @@ Baiting_df$cor_BF7_NTD.classification <- "Negative"
 Baiting_df$cor_S2.classification <- "Negative"
 Baiting_df$cor_HA.classification <- "Negative"
 
-# These cutoffs are chosen after inspection of the density plots
+# Determine the cut-off values for antigen specificity based on the bimodal distribution
 Baiting_df$cor_WH_RBD.classification[Baiting_df$cor_WH_RBD>=23] <- "Positive"
 Baiting_df$cor_BF7_RBD.classification[Baiting_df$cor_BF7_RBD>=5] <- "Positive"
 Baiting_df$cor_WH_NTD.classification[Baiting_df$cor_WH_NTD>=5] <- "Positive"
@@ -576,7 +567,7 @@ Baiting_df$cor_HA.classification[Baiting_df$cor_HA>=14] <- "Positive"
 
 
 
-# Adding a column that tells, whether a cell is positive for antigens
+# Adding a column about whether a cell is positive for antigens
 Baiting_df$bait.positive <- "no"
 
 Baiting_df$bait.positive[Baiting_df$cor_S2.classification == "Positive" |
@@ -648,7 +639,7 @@ remove(normalized_across_features,Baiting_df_final,Baiting_df)
 
 
 # classify antigens
-# If one cell is reactive to both S2, WH and BF7, only if the score of S2 is higher than WH and BF7, it is classified as S2 
+# If one cell is reactive to both S2, Ancestral(WH) and BF7, only if the score of S2 is higher than Ancestral(WH) and BF7, it is classified as S2 
 BC$antigen <- "Ag-"
 BC$antigen[BC$cor_WH_RBD.classification == "Positive" & BC$cor_BF7_RBD.classification == "Negative" & BC$cor_S2.classification == "Negative"] <- "Ancestral RBD"
 BC$antigen[BC$cor_WH_RBD.classification == "Negative" & BC$cor_BF7_RBD.classification == "Positive" & BC$cor_S2.classification == "Negative"] <- "BF7 RBD"
@@ -666,9 +657,7 @@ BC$antigen[BC$cor_WH_NTD.classification == "Positive" & BC$cor_BF7_NTD.classific
 BC$antigen[BC$cor_WH_NTD.classification == "Positive" & BC$cor_BF7_NTD.classification == "Negative" & BC$cor_S2.classification == "Positive" & BC$WH_NTD_score > BC$S2_score] <- "Ancestral NTD"
 BC$antigen[BC$cor_WH_NTD.classification == "Negative" & BC$cor_BF7_NTD.classification == "Positive" & BC$cor_S2.classification == "Positive" & BC$BF7_NTD_score < BC$S2_score] <- "S2"
 
-
 table(BC$bait.positive,BC$antigen)
-
 
 #### 03.4 Batch2: add BCR info, classify isotype ####
 BCR_batch2 <- read.table("./cellranger/batch2/vdj/filtered_contig.tsv",header = T,sep = "\t")
@@ -742,10 +731,9 @@ BC$RNA_snn_res.0.5 <- NULL
 saveRDS(BC,"./result/BC_batch2.rds")
 
 
-
 #### 04. Merge 2 batch datasets, celltype annotation, add information and visualization ####
 #### 04.1 BC WNN ####
-#merge 2 batch dataset
+# merge 2 batch dataset
 BC_batch1 <- readRDS("./result/BC_batch1.rds") #load seurat obj preprocessed in section2
 BC_batch2 <- readRDS("./result/BC_batch2.rds") #load seurat obj preprocessed in section3
 
@@ -756,10 +744,10 @@ BC <- merge(BC_batch1,BC_batch2)
 rm(BC_batch1,BC_batch2)
 
 BC@assays$Cor_Baiting <- NULL
-#remove ZJJ because of cancer and 4 dose vaccination
+# remove ZJJ because of cancer and 4 dose vaccination
 BC <- subset(BC, sampleid != "SLE_ZJJ")
 
-#remove batch effect using Harmony
+# remove batch effect using Harmony
 DefaultAssay(BC) <- "RNA"
 BC <- NormalizeData(BC) %>% FindVariableFeatures() %>% ScaleData() %>% RunPCA()
 ElbowPlot(BC,50)
@@ -775,7 +763,6 @@ My_DotPlot(BC,features = c(marker),group_by = "seurat_clusters",dot_scale = 6,co
 My_DotPlot(BC,features = c("CD19","FCER2","IL4R","CR2","CD27","CD38","TFRC","CXCR5","ITGAX","FCRL5","SDC1","PRDM1"),group_by = "seurat_clusters",dot_scale = 6,coord_flip = FALSE)
 
 # wnn, use ADT features(except IgG) for dimensional reduction
-
 DefaultAssay(BC) <- 'Protein'
 VariableFeatures(BC) <- c("CD21","FCRL5.1","CD71","CXCR5.1","IgM","CD11C","CD27.1","IgD","CD38.1")
 BC <- NormalizeData(BC, normalization.method = 'CLR', margin = 2) %>%
@@ -822,7 +809,7 @@ BC$subType[BC$subType == "rNAV" & BC$Isotype %in% c("IGHA","IGHG")] <- "sMBC"
 
 BC$CD71 <- BC@assays$Protein@data["CD71",]
 BC$CD27 <- BC@assays$Protein@data["CD27.1",]
-BC$subType[BC$subType == "DN2" & BC$CD71 > 1.5] <- "aMBC" #we annotate CD71+DN2 to aMBC
+BC$subType[BC$subType == "DN2" & BC$CD71 > 1.5] <- "aMBC" #we annotate CD71(hi) DN2 to aMBC
 table(BC$subType,BC$Isotype)
 BC$CD71 <- NULL
 BC$CD27 <- NULL
@@ -857,7 +844,6 @@ BC$epitope[BC$antigen == "S2"] <- "S2"
 
 saveRDS(BC,file = "./result/BC_merged.rds")
 
-
 #### 04.3 Visualization of annotated B cells ####
 
 # Dimplot of WNN UMAP of total B cells
@@ -865,7 +851,7 @@ pdf("./figure/Fig5E.BC_WNN.pdf",width = 5.8,height = 5)
 DimPlot(BC, reduction = 'wnn.umap', label = F, label.size = 6, pt.size = 0.8,group.by = c("subType"),cols = BC_col)+ggtitle("")+center.title() + NoLegend()
 dev.off()
 
-#Dotplot of B cell markers from protein level and RNA level(without PB because PB has high CD71, CD38 and CD27)
+ #Dotplot of B cell markers from protein level and RNA level
 BC_sub <- subset(BC, subType != "PB")
 BC_sub$subType <- factor(BC_sub$subType,levels = c("rNAV","aNAV","DN1","DN2","uMBC","sMBC","aMBC"))
 pdf("./figure/Fig5F.BC_Dotplot_marker.pdf",width = 6.2,height = 4.8)
@@ -875,12 +861,12 @@ My_DotPlot(BC_sub,features = c("rna_FCER2","rna_IL4R","protein_CD27.1","protein_
                                "protein_FCRL5.1","rna_FCRL5"),group_by = "subType",dot_scale = 6,coord_flip = T)
 dev.off()
 
-#VlnPlot of B cell markers from protein level and RNA level
+# VlnPlot of B cell markers of protein level and RNA level
 DefaultAssay(BC) <- "Protein"
 p <- VlnPlot(BC, features = c("IgD","CD27.1","IgM","CD21","CD71","FCRL5.1","CD11C","CXCR5.1","CD38.1","rna_PRDM1"), ncol = 5,pt.size = 0,group.by = "subType",cols = BC_col)
 ggsave(p, filename = "./figure/FigS5B.Vlnplot_BC_protein_expr.pdf", width = 20, height = 5)
 
-#Visualize Ag+ cells in different samples on wnnUMAP
+# Visualize Ag+ cells in different samples on wnnUMAP
 Agneg <- BC@meta.data[BC$baiting == "Ag-","cell_id"]
 Agpos_HI_early <- BC@meta.data[BC$baiting == "Ag+" & BC$sample_time == "HI_early","cell_id"]
 Agpos_HVI_early <- BC@meta.data[BC$baiting == "Ag+" & BC$sample_time == "HVI_early","cell_id"]
@@ -967,7 +953,7 @@ grid.arrange(grobs = p_main,
 dev.off()
 
 
-# Distribution of ILBRA-seq score of Ag+ B cells
+# Distribution of LIBRA-seq score of Ag+ B cells
 BC$WH_RBD_score[is.na(BC$WH_RBD_score)] <- 0
 BC$WH_NTD_score[is.na(BC$WH_NTD_score)] <- 0
 BC$BF7_RBD_score[is.na(BC$BF7_RBD_score)] <- 0
@@ -988,7 +974,7 @@ p[[5]] <- FeatureScatter(BC, feature1 = "WH_RBD_score", feature2 = "S2_score", p
 p[[6]] <- FeatureScatter(BC, feature1 = "WH_NTD_score", feature2 = "S2_score", pt.size = 1, group.by = "antigen", cols = Antigen) +
   ggtitle("") + xlab("Ancestral NTD scores") + ylab("S2 scores")+NoLegend()
 
-pdf("./figure/FigS5C.Ag+_ILBRA_score.pdf",width = 6,height = 9)
+pdf("./figure/FigS5C.Ag+_LIBRA_score.pdf",width = 6,height = 9)
 grid.arrange(grobs = p, ncol = 2, nrow = 3)
 dev.off()
 
@@ -1037,7 +1023,7 @@ p <- ggplot(tt,aes(y = Freq, x = factor(sample), fill = antigen)) + geom_bar(sta
 ggsave("./result/figure/FigS5E.Imprinting_longitudinal.pdf",p,width = 6,height = 5.5)
 
 #### 05. Transcriptome downstream analysis ####
-#When calculate DEG and pathway enrichment, I added Ig genes back to RNA expression matrix
+# When calculate DEG and pathway enrichment, I added Ig genes back to RNA expression matrix
 raw <- readRDS("raw_combined.rds")
 common_cells <- intersect(colnames(BC@assays$RNA), colnames(BC@assays$RNA))
 BC[["RNA"]] <- CreateAssayObject(raw@assays$RNA[, common_cells])
@@ -1047,7 +1033,7 @@ DefaultAssay(BC) <- "RNA"
 BC <- NormalizeData(BC)
 
 #### 05.1 DEG analysis and visualization by volcano ####
-#volcano plot of DEGs between SLE and H
+# volcano plot of DEGs between SLE and H
 upgene <- c("CD69", "NFKBIA", "IRF1","IFITM1","IFIT3","IFI44L", "ISG20","IFI6")
 downgene <- c("CD79B","MS4A1","CD79A","CD27","SYK","HLA-DOB","HLA-DRB1")
 
@@ -1134,7 +1120,6 @@ rm(m_df,m_df2,m_df3,m_df4,fgsea_sets2,fgsea_sets3,fgsea_sets4)
 
 
 # Add pathway module score
-
 pathway_select <- c("GOBP_ANTIGEN_PROCESSING_AND_PRESENTATION_OF_PEPTIDE_ANTIGEN",
                     "GOBP_CELLULAR_RESPONSE_TO_GLUCOCORTICOID_STIMULUS",
                     "HALLMARK_INTERFERON_ALPHA_RESPONSE","GOBP_RESPONSE_TO_INTERFERON_BETA",
@@ -1147,7 +1132,7 @@ pathway_select <- c("GOBP_ANTIGEN_PROCESSING_AND_PRESENTATION_OF_PEPTIDE_ANTIGEN
 pathway <- fgsea_sets[names(fgsea_sets) %in% pathway_select]
 pathway <- pathway[!duplicated(pathway)]
 
-ISG <- as.data.frame(t(read.table("./GSEA/ISG.txt",header = F,sep = ",")))
+ISG <- as.data.frame(t(read.table("./GSEA/ISG.txt",header = F,sep = ","))) # 100 ISGs in https://doi.org/10.1038/s41590-020-0743-0  
 ISG <- list(as.character(ISG$V1))
 names(ISG) <- "ISG"
 pathway <- c(pathway,ISG)
@@ -1292,6 +1277,7 @@ ggplot(subset(dist_ham, !is.na(dist_nearest)),
 
 metadata <- BC@meta.data
 
+# We used heavy chain to define clone
 clone_pass <- read.table("./result/BCR/changeo/BCR_H_clone-pass.tsv",header = T, sep = "\t")
 clone_pass <- clone_pass[clone_pass$productive == "TRUE",]
 rownames(clone_pass) <- clone_pass$cell_id
@@ -1338,7 +1324,6 @@ timepoint <- H033_cells[,c(9,10,11,2)]
 timepoint$timepoint[timepoint$timepoint == "early"] <- 1
 timepoint$timepoint[timepoint$timepoint == "late"] <- 0
 write.table(timepoint,file = "./result/BCR/Circos/Agpos/H033/H033_timepoint.txt",quote = F,row.names = F,col.names = F,sep = "\t")
-
 
 # generate circos files for H050
 H050_link <- read.csv("./result/BCR/Circos/Agpos/H050/H050_link.csv")
