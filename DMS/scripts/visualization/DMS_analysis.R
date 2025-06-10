@@ -21,7 +21,6 @@ Cross = "grey90"
 Ancestral = "grey95"
 cluster_col <- c("A" = "#086233","B" = "#FF4040","C" = "#FFDF33","D1" = "#4EDDA2","D2" = "#4BAA30",
                  "E2" = "#AA364E","E3" = "#5C1A14","F1" = "#C58F50","F2" = "#325099","F3" = "#8AA3C8")
-setwd("C:/Users/cchan/file/work/cls/Lab/03.WYY_DMS")
 
 #### 01. UAMP :cluster####
 mAb_embed <- read.csv("./DMS/files/mAb_embed.csv")
