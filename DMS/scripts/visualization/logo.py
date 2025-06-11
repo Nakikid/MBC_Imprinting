@@ -131,8 +131,8 @@ def plot_highlight_res_logo(res, prefix, rownames=None, site_thres=0.0, force_pl
             pdf.savefig(bbox_inches='tight',pad_inches=0.5)
             plt.close()
 
-os.chdir("C:/Users/cchan/file/work/cls/Lab/03.WYY_DMS")
-df = pd.read_csv("./DMS/files/antibody_dms_merge_bycluster.csv")
+
+df = pd.read_csv("./DMS/processed_files/antibody_dms_merge_bycluster.csv")
 
 df_A = df[df['antibody'].isin(["A"])]
 plot_highlight_res_logo(df_A, "./DMS/figures/FigS3D.Mut_Trend/Logo_highlightA", site_thres=2.579376, width=3.4)
