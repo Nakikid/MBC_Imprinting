@@ -294,7 +294,7 @@ BC$Row.names <- NULL
 remove(normalized_across_features,Baiting_df_final,Baiting_df)
 
 # Classify antigens
-# If one cell is reactive to both S2, Ancestral(WH) and BF7, only if the score of S2 is higher than Anncestral(WH) and BF7, it is classified as S2 
+# If one cell is reactive to both S2, Ancestral(WH) and BF.7, only if the score of S2 is higher than Ancestral(WH) and BF。7, it is classified as S2 
 BC$antigen <- "Ag-"
 BC$antigen[BC$cor_WH_RBD.classification == "Positive" & BC$cor_BF7_RBD.classification == "Negative" & BC$cor_S2.classification == "Negative"] <- "Ancestral RBD"
 BC$antigen[BC$cor_WH_RBD.classification == "Negative" & BC$cor_BF7_RBD.classification == "Positive" & BC$cor_S2.classification == "Negative"] <- "BF7 RBD"
@@ -639,7 +639,7 @@ remove(normalized_across_features,Baiting_df_final,Baiting_df)
 
 
 # classify antigens
-# If one cell is reactive to both S2, Ancestral(WH) and BF7, only if the score of S2 is higher than Ancestral(WH) and BF7, it is classified as S2 
+# If one cell is reactive to both S2, Ancestral(WH) and BF.7, only if the score of S2 is higher than Ancestral(WH) and BF.7, it is classified as S2 
 BC$antigen <- "Ag-"
 BC$antigen[BC$cor_WH_RBD.classification == "Positive" & BC$cor_BF7_RBD.classification == "Negative" & BC$cor_S2.classification == "Negative"] <- "Ancestral RBD"
 BC$antigen[BC$cor_WH_RBD.classification == "Negative" & BC$cor_BF7_RBD.classification == "Positive" & BC$cor_S2.classification == "Negative"] <- "BF7 RBD"
@@ -838,10 +838,6 @@ BC$epitope[BC$antigen %in% c("BF7 RBD","Cross RBD","Ancestral RBD")] <- "RBD"
 BC$epitope[BC$antigen %in% c("BF7 NTD","Cross NTD","Ancestral NTD")] <- "NTD"
 BC$epitope[BC$antigen == "S2"] <- "S2"
 
-#export Ag+BC metainfo as csv
-#metadata <- BC@meta.data[BC$bait.positive == "yes",c(1,20:22,25:51,167,288:290,295,298:301)]
-#write.csv(metadata,file = "./result/BC_metainfo.csv")
-
 saveRDS(BC,file = "./result/BC_merged.rds")
 
 #### 04.3 Visualization of annotated B cells ####
@@ -851,7 +847,7 @@ pdf("./figure/Fig5E.BC_WNN.pdf",width = 5.8,height = 5)
 DimPlot(BC, reduction = 'wnn.umap', label = F, label.size = 6, pt.size = 0.8,group.by = c("subType"),cols = BC_col)+ggtitle("")+center.title() + NoLegend()
 dev.off()
 
- #Dotplot of B cell markers from protein level and RNA level
+# Dotplot of B cell markers from protein level and RNA level
 BC_sub <- subset(BC, subType != "PB")
 BC_sub$subType <- factor(BC_sub$subType,levels = c("rNAV","aNAV","DN1","DN2","uMBC","sMBC","aMBC"))
 pdf("./figure/Fig5F.BC_Dotplot_marker.pdf",width = 6.2,height = 4.8)
@@ -1448,19 +1444,19 @@ custom_palette=c(BC_col,
 
 plots = plotTrees(clones, tips = "subType",tipsize = 6,palette=custom_palette)
 plots[[1]]
-treesToPDF(plots, file="./result/BCR/Tree/FigS5J.H002_trees_subType.pdf", nrow=1, ncol=2,width = 8,height=3)
+treesToPDF(plots, file="./result/BCR/Tree/FigS6C.H002_trees_subType.pdf", nrow=1, ncol=2,width = 8,height=3)
 
 plots_time = plotTrees(clones, tips = "timepoint",tipsize = 6,palette=custom_palette)
 plots_time[[1]]
-treesToPDF(plots_time, file="./result/BCR/Tree/FigS5J.H002_trees_timepoint.pdf", nrow=1, ncol=2,width = 8,height=2)
+treesToPDF(plots_time, file="./result/BCR/Tree/FigS6C.H002_trees_timepoint.pdf", nrow=1, ncol=2,width = 8,height=2)
 
 plots_ag = plotTrees(clones, tips = "antigen_main",tipsize = 6,palette=custom_palette)
 plots_ag[[1]]
-treesToPDF(plots_ag, file="./result/BCR/Tree/FigS5J.H002_trees_antigen.pdf", nrow=1, ncol=2,width = 8,height=2)
+treesToPDF(plots_ag, file="./result/BCR/Tree/FigS6C.H002_trees_antigen.pdf", nrow=1, ncol=2,width = 8,height=2)
 
 plots_Iso = plotTrees(clones, tips = "Isotype",tipsize = 6,palette=custom_palette)
 plots_Iso[[1]]
-treesToPDF(plots_Iso, file="./result/BCR/Tree/FigS5J.H002_trees_Isotype.pdf", nrow=1, ncol=2,width = 8,height=2.5)
+treesToPDF(plots_Iso, file="./result/BCR/Tree/FigS6C.H002_trees_Isotype.pdf", nrow=1, ncol=2,width = 8,height=2.5)
 
 # Prepare BCR data for H050
 clone_info <- BC@meta.data[BC$clone_id %in% c(721) & BC$sample == "H050" & BC$baiting == "Ag+",]
@@ -1499,19 +1495,19 @@ clones = getTrees(clones, nproc=1)
 
 plots = plotTrees(clones, tips = "subType",tipsize = 6,palette=custom_palette)
 plots[[1]]
-treesToPDF(plots, file="./result/BCR/Tree/FigS5J.H050_trees_subType.pdf", nrow=1, ncol=1,width = 4,height=3)
+treesToPDF(plots, file="./result/BCR/Tree/FigS6C.H050_trees_subType.pdf", nrow=1, ncol=1,width = 4,height=3)
 
 plots_time = plotTrees(clones, tips = "timepoint",tipsize = 6,palette=custom_palette)
 plots_time[[1]]
-treesToPDF(plots_time, file="./result/BCR/Tree/FigS5J.H050_trees_timepoint.pdf", nrow=1, ncol=1,width = 4,height=2)
+treesToPDF(plots_time, file="./result/BCR/Tree/FigS6C.H050_trees_timepoint.pdf", nrow=1, ncol=1,width = 4,height=2)
 
 plots_ag = plotTrees(clones, tips = "antigen_main",tipsize = 6,palette=custom_palette)
 plots_ag[[1]]
-treesToPDF(plots_ag, file="./result/BCR/Tree/FigS5J.H050_trees_antigen.pdf", nrow=1, ncol=1,width = 4,height=2)
+treesToPDF(plots_ag, file="./result/BCR/Tree/FigS6C.H050_trees_antigen.pdf", nrow=1, ncol=1,width = 4,height=2)
 
 plots_Iso = plotTrees(clones, tips = "Isotype",tipsize = 6,palette=custom_palette)
 plots_Iso[[1]]
-treesToPDF(plots_Iso, file="./result/BCR/Tree/FigS5J.H050_trees_Isotype.pdf", nrow=1, ncol=2,width = 8,height=2.5)
+treesToPDF(plots_Iso, file="./result/BCR/Tree/FigS6C.H050_trees_Isotype.pdf", nrow=1, ncol=2,width = 8,height=2.5)
 
 
 # Prepare BCR data for Total HI
@@ -1553,19 +1549,19 @@ clones = getTrees(clones, nproc=1)
 
 plots = plotTrees(clones, tips = "subType",tipsize = 6,palette=custom_palette)
 plots[[1]]
-treesToPDF(plots, file="./result/BCR/Tree/FigS6C.HI_trees_subType.pdf", nrow=1, ncol=2,width = 8,height=2.5)
+treesToPDF(plots, file="./result/BCR/Tree/FigS6E.HI_trees_subType.pdf", nrow=1, ncol=2,width = 8,height=2.5)
 
 plots_time = plotTrees(clones, tips = "timepoint",tipsize = 6,palette=custom_palette)
 plots_time[[1]]
-treesToPDF(plots_time, file="./result/BCR/Tree/FigS6C.HI_trees_timepoint.pdf", nrow=1, ncol=2,width = 8,height=2.5)
+treesToPDF(plots_time, file="./result/BCR/Tree/FigS6E.HI_trees_timepoint.pdf", nrow=1, ncol=2,width = 8,height=2.5)
 
 plots_ag = plotTrees(clones, tips = "antigen_main",tipsize = 6,palette=custom_palette)
 plots_ag[[1]]
-treesToPDF(plots_ag, file="./result/BCR/Tree/FigS6C.HI_trees_antigen.pdf", nrow=1, ncol=2,width = 8,height=2.5)
+treesToPDF(plots_ag, file="./result/BCR/Tree/FigS6E.HI_trees_antigen.pdf", nrow=1, ncol=2,width = 8,height=2.5)
 
 plots_Iso = plotTrees(clones, tips = "Isotype",tipsize = 6,palette=custom_palette)
 plots_Iso[[1]]
-treesToPDF(plots_Iso, file="./result/BCR/Tree/FigS6C.HI_trees_Isotype.pdf", nrow=1, ncol=2,width = 8,height=2.5)
+treesToPDF(plots_Iso, file="./result/BCR/Tree/FigS6E.HI_trees_Isotype.pdf", nrow=1, ncol=2,width = 8,height=2.5)
 
 
 # Prepare BCR data for Total HVI
@@ -1605,19 +1601,19 @@ clones = getTrees(clones, nproc=1)
 
 plots = plotTrees(clones, tips = "subType",tipsize = 6,palette=custom_palette)
 plots[[1]]
-treesToPDF(plots, file="./result/BCR/Tree/FigS6C.HVI_trees_subType.pdf", nrow=1, ncol=2,width = 8,height=2.5)
+treesToPDF(plots, file="./result/BCR/Tree/FigS6E.HVI_trees_subType.pdf", nrow=1, ncol=2,width = 8,height=2.5)
 
 plots_time = plotTrees(clones, tips = "timepoint",tipsize = 6,palette=custom_palette)
 plots_time[[1]]
-treesToPDF(plots_time, file="./result/BCR/Tree/FigS6C.HVI_trees_timepoint.pdf", nrow=1, ncol=2,width = 8,height=2.5)
+treesToPDF(plots_time, file="./result/BCR/Tree/FigS6E.HVI_trees_timepoint.pdf", nrow=1, ncol=2,width = 8,height=2.5)
 
 plots_ag = plotTrees(clones, tips = "antigen_main",tipsize = 6,palette=custom_palette)
 plots_ag[[1]]
-treesToPDF(plots_ag, file="./result/BCR/Tree/FigS6C.HVI_trees_antigen.pdf", nrow=1, ncol=2,width = 8,height=2.5)
+treesToPDF(plots_ag, file="./result/BCR/Tree/FigS6E.HVI_trees_antigen.pdf", nrow=1, ncol=2,width = 8,height=2.5)
 
 plots_Iso = plotTrees(clones, tips = "Isotype",tipsize = 6,palette=custom_palette)
 plots_Iso[[1]]
-treesToPDF(plots_Iso, file="./result/BCR/Tree/FigS6C.HVI_trees_Isotype.pdf", nrow=1, ncol=2,width = 8,height=2.5)
+treesToPDF(plots_Iso, file="./result/BCR/Tree/FigS6E.HVI_trees_Isotype.pdf", nrow=1, ncol=2,width = 8,height=2.5)
 
 
 # Prepare BCR data for Total SLEI
@@ -1658,19 +1654,19 @@ clones = getTrees(clones, nproc=1)
 
 plots = plotTrees(clones, tips = "subType",tipsize = 6,palette=custom_palette)
 plots[[1]]
-treesToPDF(plots, file="./result/BCR/Tree/FigS6C.SLEI_trees_subType.pdf", nrow=1, ncol=1,width = 4,height=2.5)
+treesToPDF(plots, file="./result/BCR/Tree/FigS6E.SLEI_trees_subType.pdf", nrow=1, ncol=1,width = 4,height=2.5)
 
 plots_time = plotTrees(clones, tips = "timepoint",tipsize = 6,palette=custom_palette)
 plots_time[[1]]
-treesToPDF(plots_time, file="./result/BCR/Tree/FigS6C.SLEI_trees_timepoint.pdf", nrow=1, ncol=1,width = 4,height=2.5)
+treesToPDF(plots_time, file="./result/BCR/Tree/FigS6E.SLEI_trees_timepoint.pdf", nrow=1, ncol=1,width = 4,height=2.5)
 
 plots_ag = plotTrees(clones, tips = "antigen_main",tipsize = 6,palette=custom_palette)
 plots_ag[[1]]
-treesToPDF(plots_ag, file="./result/BCR/Tree/FigS6C.SLEI_trees_antigen.pdf", nrow=1, ncol=1,width = 4,height=2.5)
+treesToPDF(plots_ag, file="./result/BCR/Tree/FigS6E.SLEI_trees_antigen.pdf", nrow=1, ncol=1,width = 4,height=2.5)
 
 plots_Iso = plotTrees(clones, tips = "Isotype",tipsize = 6,palette=custom_palette)
 plots_Iso[[1]]
-treesToPDF(plots_Iso, file="./result/BCR/Tree/FigS6C.SLEI_trees_Isotype.pdf", nrow=1, ncol=2,width = 8,height=2.5)
+treesToPDF(plots_Iso, file="./result/BCR/Tree/FigS6E.SLEI_trees_Isotype.pdf", nrow=1, ncol=1,width = 4,height=2.5)
 
 # Prepare BCR data for Total SLEVI
 clone_info <- BC@meta.data[BC$clone_id %in% c(4537,13353) & BC$sample %in% c("SLE_TYK"),]
@@ -1713,16 +1709,16 @@ clones = getTrees(clones, nproc=1)
 
 plots = plotTrees(clones, tips = "subType",tipsize = 6,palette=custom_palette)
 plots[[1]]
-treesToPDF(plots, file="./result/BCR/Tree/FigS6C.SLEVI_trees_subType.pdf", nrow=3, ncol=1,width = 4,height=6)
+treesToPDF(plots, file="./result/BCR/Tree/FigS6E.SLEVI_trees_subType.pdf", nrow=3, ncol=1,width = 4,height=6)
 
 plots_time = plotTrees(clones, tips = "timepoint",tipsize = 6,palette=custom_palette)
 plots_time[[1]]
-treesToPDF(plots_time, file="./result/BCR/Tree/FigS6C.SLEVI_trees_timepoint.pdf", nrow=3, ncol=1,width = 4,height=6)
+treesToPDF(plots_time, file="./result/BCR/Tree/FigS6E.SLEVI_trees_timepoint.pdf", nrow=3, ncol=1,width = 4,height=6)
 
 plots_ag = plotTrees(clones, tips = "antigen_main",tipsize = 6,palette=custom_palette)
 plots_ag[[1]]
-treesToPDF(plots_ag, file="./result/BCR/Tree/FigS6C.SLEVI_trees_antigen.pdf", nrow=3, ncol=1,width = 4,height=6)
+treesToPDF(plots_ag, file="./result/BCR/Tree/FigS6E.SLEVI_trees_antigen.pdf", nrow=3, ncol=1,width = 4,height=6)
 
 plots_Iso = plotTrees(clones, tips = "Isotype",tipsize = 6,palette=custom_palette)
 plots_Iso[[1]]
-treesToPDF(plots_Iso, file="./result/BCR/Tree/FigS6C.SLEVI_trees_Isotype.pdf", nrow=3, ncol=1,width = 4,height=6)
+treesToPDF(plots_Iso, file="./result/BCR/Tree/FigS6E.SLEVI_trees_Isotype.pdf", nrow=3, ncol=1,width = 4,height=6)
