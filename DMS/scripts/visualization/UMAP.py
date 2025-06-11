@@ -29,9 +29,8 @@ class DMSProfileGraph(ig.Graph):
     def __len__(self):
         return len(self.sample2node)
 
-os.chdir("C:/Users/cchan/file/work/cls/Lab/03.WYY_DMS")
 #load data
-dms_results = pd.read_csv("./DMS/files/antibody_dms_merge_avg.csv")
+dms_results = pd.read_csv("./DMS/processed_files/antibody_dms_merge_avg.csv")
 len(dms_results)
 
 
@@ -107,6 +106,6 @@ for i in range(len(embedding)):
         )
 plt.show()
 
-antibody_info = pd.read_csv("./DMS/files/mAb_embed.csv")
+antibody_info = pd.read_csv("./DMS/processed_files/mAb_embed.csv")
 mAb_embed = pd.merge(embedding.iloc[:, 0:3], antibody_info, on='antibody', how='left')
-mAb_embed.to_csv('./DMS/files/mAb_embed.csv', index=False)
+mAb_embed.to_csv('./DMS/processed_files/mAb_embed.csv', index=False)
